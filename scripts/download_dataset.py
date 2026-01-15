@@ -18,7 +18,7 @@ def main():
             shutil.copytree(item, dest, dirs_exist_ok=True)
         else:
             shutil.copy2(item, dest)
-    
+
 
 
 

@@ -1,0 +1,64 @@
+from pathlib import Path
+import typer
+
+from energy_dissagregation_mlops.data import MyDataset, PreprocessConfig, download_ukdale
+from energy_dissagregation_mlops.train import train as train_fn
+
+app = typer.Typer(no_args_is_help=True)
+
+@app.command()
+def preprocess(
+    data_path: Path = typer.Option(..., exists=True, help="Path to ukdale.h5"),
+    output_folder: Path = typer.Option(..., help="Folder to write processed chunks"),
+    building: int = typer.Option(1, help="UK-DALE building number (house)"),
+    meter: int = typer.Option(1, help="Meter number (meter1 is mains)"),
+    window_size: int = typer.Option(1024, help="Window length in samples"),
+    stride: int = typer.Option(256, help="Stride between windows"),
+    resample_rule: str = typer.Option("6S", help="Pandas resample rule (e.g. 6S, 1min)"),
+    power_type: str = typer.Option("apparent", help="Power type: apparent/active if available"),
+    normalize: bool = typer.Option(True, help="Z-score normalize using global mean/std"),
+):
+    cfg = PreprocessConfig(
+        building=building,
+        meter=meter,
+        physical_quantity="power",
+        power_type=power_type,
+        resample_rule=resample_rule if resample_rule.lower() != "none" else None,
+        window_size=window_size,
+        stride=stride,
+        normalize=normalize,
+    )
+    ds = MyDataset(data_path=data_path)
+    ds.preprocess(output_folder=output_folder, cfg=cfg)
+    typer.echo(f"✅ Preprocessed saved to {output_folder}")
+
+@app.command()
+def train(
+    preprocessed_folder: Path = typer.Option("data/processed", exists=True, help="Folder with chunk_*.npz + meta.npz"),
+    epochs: int = typer.Option(5, help="Epochs"),
+    batch_size: int = typer.Option(32, help="Batch size"),
+    lr: float = typer.Option(1e-3, help="Learning rate"),
+    num_workers: int = typer.Option(2, help="DataLoader workers"),
+    device: str = typer.Option("auto", help="auto/cpu/cuda"),
+):
+    train_fn(
+        preprocessed_folder=str(preprocessed_folder),
+        epochs=epochs,
+        batch_size=batch_size,
+        lr=lr,
+        num_workers=num_workers,
+        device=None if device == "auto" else device,
+    )
+
+@app.command()
+def download(
+    target_dir: Path = typer.Option("data/raw", help="Where to store raw dataset"),
+):
+    download_ukdale(target_dir)
+    typer.echo(f"✅ Data downloaded to {target_dir}")
+
+def main():
+    app()
+
+if __name__ == "__main__":
+    main()

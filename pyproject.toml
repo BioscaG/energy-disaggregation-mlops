@@ -33,3 +33,6 @@ select = ["I", "N", "E", "W", ]
 
 [tool.coverage.run]
 omit = ["tests/*"]
+
+[project.scripts]
+edmlops = "energy_dissagregation_mlops.cli:main"
