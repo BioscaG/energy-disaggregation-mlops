@@ -2,7 +2,7 @@ docs/site/
 
 # test cache
 manual_test/
-
+tests/Tobias_test.ipynb
 # other local dev info
 .vscode/
 
