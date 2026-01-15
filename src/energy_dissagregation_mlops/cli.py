@@ -3,6 +3,7 @@ import typer
 
 from energy_dissagregation_mlops.data import MyDataset, PreprocessConfig, download_ukdale
 from energy_dissagregation_mlops.train import train as train_fn
+from energy_dissagregation_mlops.evaluate import evaluate as evaluate_fn
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -49,6 +50,25 @@ def train(
         num_workers=num_workers,
         device=None if device == "auto" else device,
     )
+
+
+@app.command()
+def evaluate(
+    preprocessed_folder: Path = typer.Option("data/processed", exists=True, help="Folder with processed data"),
+    checkpoint_path: Path = typer.Option("models/best.pt", exists=True, help="Path to model checkpoint"),
+    batch_size: int = typer.Option(32, help="Batch size"),
+    device: str = typer.Option("auto", help="auto/cpu/cuda"),
+    plot_results: bool = typer.Option(False, help="Save a reconstruction plot"),
+):
+    
+    evaluate_fn(
+        preprocessed_folder=str(preprocessed_folder),
+        checkpoint_path=str(checkpoint_path),
+        batch_size=batch_size,
+        device=None if device == "auto" else device,
+        plot_results=plot_results,
+    )
+
 
 @app.command()
 def download(
