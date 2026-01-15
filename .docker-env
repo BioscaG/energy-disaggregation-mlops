@@ -1,0 +1,33 @@
+# Docker Environment Configuration
+# Copy this to .env and adjust as needed
+
+# Python settings
+PYTHONUNBUFFERED=1
+PYTHONDONTWRITEBYTECODE=1
+
+# API settings
+API_HOST=0.0.0.0
+API_PORT=8000
+API_WORKERS=4
+API_RELOAD=false
+
+# Training settings
+TRAIN_EPOCHS=5
+TRAIN_BATCH_SIZE=32
+TRAIN_LR=0.001
+TRAIN_NUM_WORKERS=2
+TRAIN_DEVICE=auto
+
+# Data settings
+DATA_PATH=/app/data
+MODELS_PATH=/app/models
+CONFIGS_PATH=/app/configs
+
+# Preprocessing settings
+BUILDING=1
+METER=1
+WINDOW_SIZE=1024
+STRIDE=256
+RESAMPLE_RULE=6S
+POWER_TYPE=apparent
+NORMALIZE=true

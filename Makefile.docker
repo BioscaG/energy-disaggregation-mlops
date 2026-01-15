@@ -1,0 +1,116 @@
+# Docker Makefile for convenient operations
+
+.PHONY: help build build-api build-train build-cli build-dev up down logs-api logs-train logs-cli clean test
+
+help:
+	@echo "Energy Disaggregation MLOps - Docker Commands"
+	@echo ""
+	@echo "Building:"
+	@echo "  make build          - Build all images"
+	@echo "  make build-api      - Build API image"
+	@echo "  make build-train    - Build training image"
+	@echo "  make build-cli      - Build CLI image"
+	@echo "  make build-dev      - Build development image"
+	@echo ""
+	@echo "Running:"
+	@echo "  make up-api         - Start API service"
+	@echo "  make up-train       - Start training service"
+	@echo "  make up-cli         - Start CLI interactive shell"
+	@echo "  make up             - Start all services"
+	@echo "  make down           - Stop all services"
+	@echo ""
+	@echo "Logs & Debugging:"
+	@echo "  make logs-api       - View API logs"
+	@echo "  make logs-train     - View training logs"
+	@echo "  make logs-cli       - View CLI logs"
+	@echo "  make logs           - View all logs"
+	@echo ""
+	@echo "Utilities:"
+	@echo "  make clean          - Stop and remove containers"
+	@echo "  make prune          - Remove unused images and volumes"
+	@echo "  make test           - Run tests in dev container"
+
+# Build commands
+build:
+	docker-compose build
+
+build-api:
+	docker-compose build api
+
+build-train:
+	docker-compose build train
+
+build-cli:
+	docker-compose build cli
+
+build-dev:
+	docker build -f Dockerfile.dev -t energy-disaggregation-dev .
+
+# Up commands
+up-api:
+	docker-compose up api
+
+up-train:
+	docker-compose --profile training up train
+
+up-cli:
+	docker-compose --profile cli run cli bash
+
+up:
+	docker-compose up
+
+# Down
+down:
+	docker-compose down
+
+# Logs
+logs-api:
+	docker-compose logs -f api
+
+logs-train:
+	docker-compose logs -f train
+
+logs-cli:
+	docker-compose logs -f cli
+
+logs:
+	docker-compose logs -f
+
+# Utilities
+clean: down
+	docker-compose rm -f
+
+prune:
+	docker system prune -f
+
+test:
+	docker build -f Dockerfile.dev -t energy-disaggregation-dev . && \
+	docker run --rm \
+	  -v $(PWD):/app \
+	  -v $(PWD)/data:/app/data \
+	  energy-disaggregation-dev \
+	  bash -c "cd /app && pytest tests/"
+
+# Common workflows
+download-data: build-cli
+	docker-compose --profile cli run cli download --target-dir data/raw
+
+preprocess: build-cli
+	docker-compose --profile cli run cli preprocess \
+	  --data-path data/raw/ukdale.h5 \
+	  --output-folder data/processed
+
+train: build-train
+	docker-compose --profile training up train
+
+serve: build-api
+	docker-compose up api
+
+dev:
+	docker build -f Dockerfile.dev -t energy-disaggregation-dev . && \
+	docker run -it \
+	  -v $(PWD):/app \
+	  -v $(PWD)/data:/app/data \
+	  -v $(PWD)/models:/app/models \
+	  energy-disaggregation-dev \
+	  bash

@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: dockerfiles/api.dockerfile
+    container_name: energy-disaggregation-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models:ro
+      - ./configs:/app/configs:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - energy-network
+    restart: unless-stopped
+
+  train:
+    build:
+      context: .
+      dockerfile: dockerfiles/train.dockerfile
+    container_name: energy-disaggregation-train
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./configs:/app/configs:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - energy-network
+    profiles:
+      - training
+
+  cli:
+    build:
+      context: .
+      dockerfile: dockerfiles/cli.dockerfile
+    container_name: energy-disaggregation-cli
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./configs:/app/configs
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - energy-network
+    profiles:
+      - cli
+    stdin_open: true
+    tty: true
+
+networks:
+  energy-network:
+    driver: bridge

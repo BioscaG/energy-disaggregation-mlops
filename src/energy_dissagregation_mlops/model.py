@@ -1,16 +1,27 @@
 from torch import nn
 import torch
 
+
 class Model(nn.Module):
-    """Just a dummy model to show how to structure your code"""
-    def __init__(self):
+    """
+    Simple 1D CNN for time-series regression.
+    Input:  x shape = [B, 1, T]
+    Output: y shape = [B, 1, T]  (e.g. appliance power)
+    """
+
+    def __init__(self, window_size: int = 1024):
         super().__init__()
-        self.layer = nn.Linear(1, 1)
+
+        self.net = nn.Sequential(
+            nn.Conv1d(1, 16, kernel_size=9, padding=4),
+            nn.ReLU(),
+            nn.Conv1d(16, 32, kernel_size=9, padding=4),
+            nn.ReLU(),
+            nn.Conv1d(32, 16, kernel_size=9, padding=4),
+            nn.ReLU(),
+            nn.Conv1d(16, 1, kernel_size=9, padding=4),
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.layer(x)
-
-if __name__ == "__main__":
-    model = Model()
-    x = torch.rand(1)
-    print(f"Output shape of model: {model(x).shape}")
+        # x: [B, 1, T]
+        return self.net(x)

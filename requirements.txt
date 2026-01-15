@@ -8,3 +8,4 @@ numpy
 pandas
 tables
 hydra-core
+click==8.1.7

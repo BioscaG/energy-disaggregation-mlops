@@ -15,4 +15,4 @@ RUN pip install --no-cache-dir -r requirements.txt && \
 
 VOLUME ["/app/data", "/app/models"]
 
-ENTRYPOINT ["python", "-u", "-m", "energy_dissagregation_mlops.train"]
+ENTRYPOINT ["edmlops"]
