@@ -1,0 +1,24 @@
+{
+  "os": "Linux-6.14.0-37-generic-x86_64-with-glibc2.39",
+  "python": "CPython 3.12.12",
+  "startedAt": "2026-01-17T15:27:27.880872Z",
+  "args": [
+    "train",
+    "--preprocessed-folder",
+    "data/preprocessed",
+    "--epochs",
+    "10",
+    "--batch-size",
+    "32"
+  ],
+  "program": "-m energy_dissagregation_mlops.cli",
+  "git": {
+    "remote": "git@github.com:BioscaG/energy-disaggregation-mlops.git",
+    "commit": "593385d25bf789ecf91a47ce39b889af42075b4b"
+  },
+  "email": "guido.biosca@estudiantat.upc.edu",
+  "root": "/home/guidobioska/Documents/DTU/energy-disaggregation-mlops",
+  "host": "guidobioska",
+  "executable": "/home/guidobioska/miniconda3/envs/mlops_env/bin/python",
+  "writerId": "dbramfer12v02uvrc1zlkpb0qu9dr8x5"
+}
