@@ -11,3 +11,4 @@ hydra-core
 click==8.1.7
 matplotlib
 loguru
+wandb

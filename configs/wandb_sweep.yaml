@@ -1,0 +1,37 @@
+# Weights & Biases Hyperparameter Sweep Configuration
+# Usage: wandb sweep configs/wandb_sweep.yaml
+# Then: wandb agent <sweep_id>
+
+program: src/energy_dissagregation_mlops/train.py
+method: bayes  # Options: grid, random, bayes
+metric:
+  name: val_loss
+  goal: minimize
+
+parameters:
+  batch_size:
+    values: [16, 32, 64]
+
+  lr:
+    distribution: log_uniform_values
+    min: 1e-5
+    max: 1e-2
+
+  epochs:
+    value: 50
+
+  preprocessed_folder:
+    value: "data/preprocessed"
+
+  use_wandb:
+    value: true
+
+  project_name:
+    value: "energy-disaggregation-sweep"
+
+# Early termination configuration
+early_terminate:
+  type: hyperband
+  min_iter: 10
+  eta: 3
+  s: 2

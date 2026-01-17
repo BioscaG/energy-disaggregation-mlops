@@ -4,6 +4,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from loguru import logger
+import wandb
 
 from energy_dissagregation_mlops.model import Model
 from energy_dissagregation_mlops.data import MyDataset
@@ -16,9 +17,28 @@ def train(
     epochs: int = 3,
     num_workers: int = 2,
     device: str | None = None,
+    use_wandb: bool = True,
+    project_name: str = "energy-disaggregation",
+    run_name: str | None = None,
 ) -> None:
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
     preprocessed_folder = str(preprocessed_folder)
+
+    # Initialize Weights & Biases
+    if use_wandb:
+        wandb.init(
+            project=project_name,
+            name=run_name,
+            config={
+                "batch_size": batch_size,
+                "lr": lr,
+                "epochs": epochs,
+                "device": device,
+                "preprocessed_folder": preprocessed_folder,
+                "num_workers": num_workers,
+            },
+        )
+        logger.info(f"W&B initialized: project={project_name}, run={wandb.run.name}")
 
     logger.info(f"Starting training with device={device}, epochs={epochs}, batch_size={batch_size}, lr={lr}")
     logger.debug(f"Using preprocessed folder: {preprocessed_folder}")
@@ -52,6 +72,10 @@ def train(
 
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     criterion = nn.MSELoss()
+
+    # Watch model with W&B
+    if use_wandb:
+        wandb.watch(model, criterion, log="all", log_freq=100)
 
     best_val = float("inf")
     ckpt_path = Path("models")
@@ -99,6 +123,18 @@ def train(
 
         logger.info(f"Epoch {epoch:03d} | train_loss={train_loss:.6f} | val_loss={val_loss:.6f}")
 
+        # Log metrics to W&B
+        if use_wandb:
+            wandb.log(
+                {
+                    "epoch": epoch,
+                    "train_loss": train_loss,
+                    "val_loss": val_loss,
+                    "learning_rate": optimizer.param_groups[0]["lr"],
+                },
+                step=epoch,
+            )
+
         # Save best
         if val_loss < best_val:
             best_val = val_loss
@@ -113,7 +149,19 @@ def train(
             )
             logger.success(f"New best model saved to {best_file} (val_loss={best_val:.6f})")
 
+            # Log best model as artifact to W&B
+            if use_wandb:
+                artifact = wandb.Artifact("model", type="model")
+                artifact.add_file(str(best_file))
+                wandb.log_artifact(artifact)
+                logger.debug("Model artifact logged to W&B")
+
     logger.success(f"Training complete! Best val_loss={best_val:.6f}")
+
+    # Finish W&B run
+    if use_wandb:
+        wandb.finish()
+        logger.info("W&B run finished")
 
 
 if __name__ == "__main__":

@@ -50,6 +50,9 @@ def train(
     lr: float = typer.Option(1e-4, help="Learning rate"),
     num_workers: int = typer.Option(2, help="DataLoader workers"),
     device: str = typer.Option("auto", help="auto/cpu/cuda"),
+    use_wandb: bool = typer.Option(True, help="Enable Weights & Biases logging"),
+    wandb_project: str = typer.Option("energy-disaggregation", help="W&B project name"),
+    run_name: str = typer.Option(None, help="W&B run name"),
 ):
     logger.info("CLI: Starting training command")
     train_fn(
@@ -59,6 +62,9 @@ def train(
         lr=lr,
         num_workers=num_workers,
         device=None if device == "auto" else device,
+        use_wandb=use_wandb,
+        project_name=wandb_project,
+        run_name=run_name,
     )
 
 
