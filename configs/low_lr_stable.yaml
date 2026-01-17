@@ -2,6 +2,8 @@
 # Purpose: Very stable learning, slow but steady
 # Good for: Large datasets, avoiding oscillations
 
+data_path: "data/raw/ukdale.h5"
+
 preprocess:
   building: 1
   meter_mains: 1

@@ -2,6 +2,8 @@
 # Purpose: Fast testing and debugging
 # Duration: ~5-10 minutes total
 
+data_path: "data/raw/ukdale.h5"
+
 preprocess:
   building: 1
   meter_mains: 1

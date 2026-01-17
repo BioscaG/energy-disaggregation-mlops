@@ -2,6 +2,8 @@
 # Purpose: Train model for meter_appliance=3 (different device)
 # Duration: Similar to normal_training.yaml
 
+data_path: "data/raw/ukdale.h5"
+
 preprocess:
   building: 1
   meter_mains: 1

@@ -2,6 +2,8 @@
 # Purpose: Balanced training with reasonable results
 # Duration: ~30-60 minutes
 
+data_path: "data/raw/ukdale.h5"
+
 preprocess:
   building: 1
   meter_mains: 1

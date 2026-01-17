@@ -2,6 +2,8 @@
 # Purpose: Test aggressive learning for faster convergence
 # Risk: May oscillate or diverge
 
+data_path: "data/raw/ukdale.h5"
+
 preprocess:
   building: 1
   meter_mains: 1

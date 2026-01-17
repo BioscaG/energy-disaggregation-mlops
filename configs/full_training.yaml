@@ -2,6 +2,8 @@
 # Purpose: Maximum accuracy with all available data
 # Duration: 2-4 hours (depends on hardware)
 
+data_path: "data/raw/ukdale.h5"
+
 preprocess:
   building: 1
   meter_mains: 1
