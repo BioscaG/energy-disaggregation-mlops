@@ -19,7 +19,7 @@ def train(
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
     preprocessed_folder = str(preprocessed_folder)
 
-    # Dataset returns x: [1, T]
+    # Dataset returns (x, y): x = mains [1, T], y = appliance [1, T]
     dataset = MyDataset(
         data_path=Path("data/raw/ukdale.h5"),  # not used at runtime if preprocessed_folder is set
         preprocessed_folder=Path(preprocessed_folder),
@@ -55,12 +55,11 @@ def train(
         model.train()
         train_loss = 0.0
 
-        for x in train_loader:
-            # x: [B, 1, T]
+        for x, y in train_loader:
+            # x: [B, 1, T] (mains power)
+            # y: [B, 1, T] (appliance power)
             x = x.to(device, non_blocking=True)
-
-            # AUTOENCODER baseline: target = input
-            y = x
+            y = y.to(device, non_blocking=True)
 
             optimizer.zero_grad(set_to_none=True)
             y_hat = model(x)
@@ -77,9 +76,9 @@ def train(
         model.eval()
         val_loss = 0.0
         with torch.no_grad():
-            for x in val_loader:
+            for x, y in val_loader:
                 x = x.to(device, non_blocking=True)
-                y = x
+                y = y.to(device, non_blocking=True)
                 y_hat = model(x)
                 loss = criterion(y_hat, y)
                 val_loss += loss.item() * x.size(0)

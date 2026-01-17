@@ -1,0 +1,32 @@
+# High Learning Rate Configuration
+# Purpose: Test aggressive learning for faster convergence
+# Risk: May oscillate or diverge
+
+preprocess:
+  building: 1
+  meter_mains: 1
+  meter_appliance: 2
+  max_samples: 200000
+  window_size: 1024
+  stride: 256
+  resample_rule: "6S"
+  normalize: true
+  clip_min: 0.0
+  clip_max: null
+
+train:
+  epochs: 30
+  batch_size: 16             # Smaller batch with high LR
+  lr: 0.001                  # 10x higher than normal
+  num_workers: 2
+  device: "auto"
+
+evaluate:
+  batch_size: 32
+  device: "auto"
+  plot_results: true
+
+# Expected results:
+# - Fast initial learning
+# - May converge better or diverge
+# - Good for finding optimal LR range

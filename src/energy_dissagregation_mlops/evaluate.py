@@ -23,12 +23,12 @@ def evaluate(
         data_path=Path("data/raw/ukdale.h5"),
         preprocessed_folder=Path(preprocessed_folder),
     )
-    
+
     n = len(dataset)
     n_train = int(0.9 * n)
     _, test_ds = torch.utils.data.random_split(
-        dataset, [n_train, n - n_train], 
-        generator=torch.Generator().manual_seed(42) 
+        dataset, [n_train, n - n_train],
+        generator=torch.Generator().manual_seed(42)
     )
 
     test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False)
@@ -40,20 +40,19 @@ def evaluate(
 
     criterion_mse = nn.MSELoss()
     criterion_mae = nn.L1Loss()
-    
+
     total_mse = 0.0
     total_mae = 0.0
-    
+
     all_y = []
     all_y_hat = []
 
     # 4. Evaluation Loop
     with torch.no_grad():
-        for i, x in enumerate(test_loader):
+        for i, (x, y) in enumerate(test_loader):
             x = x.to(device)
-            
-            y = x
-            
+            y = y.to(device)
+
             y_hat = model(x)
 
             total_mse += criterion_mse(y_hat, y).item() * x.size(0)
@@ -66,7 +65,7 @@ def evaluate(
 
     avg_mse = total_mse / len(test_ds)
     avg_mae = total_mae / len(test_ds)
-    
+
     metrics = {
         "mse": avg_mse,
         "rmse": np.sqrt(avg_mse),
@@ -81,9 +80,11 @@ def evaluate(
 
     if plot_results and all_y:
         plt.figure(figsize=(12, 4))
-        plt.plot(all_y[0].flatten(), label="Original (Mains)", alpha=0.7)
-        plt.plot(all_y_hat[0].flatten(), label="Reconstructed", linestyle="--")
-        plt.title("Signal Reconstruction Evaluation")
+        plt.plot(all_y[0].flatten(), label="Appliance (Target)", alpha=0.7)
+        plt.plot(all_y_hat[0].flatten(), label="Appliance (Predicted)", linestyle="--")
+        plt.title("Energy Disaggregation: Appliance Power Prediction")
+        plt.xlabel("Time samples")
+        plt.ylabel("Power (normalized)")
         plt.legend()
         plt.grid(True)
         plt.savefig("evaluation_plot.png")

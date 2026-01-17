@@ -33,7 +33,8 @@ def download_ukdale(target_dir: str | Path = "data/raw") -> Path:
 @dataclass
 class PreprocessConfig:
     building: int = 1
-    meter: int = 1  # meter1 = mains in UK-DALE
+    meter_mains: int = 1  # meter1 = mains in UK-DALE
+    meter_appliance: int = 2  # meter2+ = appliance to predict
     physical_quantity: str = "power"
     power_type: str = "apparent"  # you saw ('power','apparent')
     resample_rule: Optional[str] = None  # e.g. "6S", "1min", or None to keep original
@@ -44,6 +45,7 @@ class PreprocessConfig:
     window_size: int = 1024  # number of samples per training window
     stride: int = 256        # step between windows
     chunk_windows: int = 2000  # how many windows to store per .npz chunk
+    max_samples: Optional[int] = None  # limit total samples for faster preprocessing (None=all)
 
 
 class MyDataset(Dataset):
@@ -112,19 +114,18 @@ class MyDataset(Dataset):
         chunk_path = self._chunks[ci]
 
         with np.load(chunk_path) as z:
-            x = z["x"][wi]  # shape: (window_size,)
-            # optional timestamps for the window
+            x = z["x"][wi]  # mains power, shape: (window_size,)
+            y = z["y"][wi]  # appliance power, shape: (window_size,)
             t = z["t"][wi] if "t" in z.files else None
 
-        # Convert to torch tensors (add channel dim if you want [C, T])
         x = torch.from_numpy(x.astype(np.float32)).unsqueeze(0)  # [1, T]
+        y = torch.from_numpy(y.astype(np.float32)).unsqueeze(0)  # [1, T]
 
         if self.return_timestamps and t is not None:
-            # store timestamps as int64 unix ns (or seconds, depending on preprocess)
             t = torch.from_numpy(t.astype(np.int64))
-            return x, t
+            return x, y, t
 
-        return x
+        return x, y
 
     @staticmethod
     def _read_meter_series(
@@ -197,43 +198,69 @@ class MyDataset(Dataset):
         output_folder = Path(output_folder)
         output_folder.mkdir(parents=True, exist_ok=True)
 
-        # 1) Load meter series
-        s = self._read_meter_series(
+        # 1) Load mains (input) and appliance (target)
+        s_mains = self._read_meter_series(
             self.data_path,
             building=cfg.building,
-            meter=cfg.meter,
+            meter=cfg.meter_mains,
             physical_quantity=cfg.physical_quantity,
             power_type=cfg.power_type,
         )
 
-        # 2) Resample/fill if requested
-        s = self._resample_and_fill(s, cfg.resample_rule, cfg.fill_method)
+        s_appliance = self._read_meter_series(
+            self.data_path,
+            building=cfg.building,
+            meter=cfg.meter_appliance,
+            physical_quantity=cfg.physical_quantity,
+            power_type=cfg.power_type,
+        )
 
-        # 3) Clip if requested
+        # 2) Align indices (find common timestamps)
+        common_idx = s_mains.index.intersection(s_appliance.index)
+        s_mains = s_mains.loc[common_idx]
+        s_appliance = s_appliance.loc[common_idx]
+
+        # 3) Resample/fill if requested
+        s_mains = self._resample_and_fill(s_mains, cfg.resample_rule, cfg.fill_method)
+        s_appliance = self._resample_and_fill(s_appliance, cfg.resample_rule, cfg.fill_method)
+
+        # 4) Clip if requested
         if cfg.clip_min is not None or cfg.clip_max is not None:
-            s = s.clip(lower=cfg.clip_min, upper=cfg.clip_max)
+            s_mains = s_mains.clip(lower=cfg.clip_min, upper=cfg.clip_max)
+            s_appliance = s_appliance.clip(lower=cfg.clip_min, upper=cfg.clip_max)
 
-        # 4) Convert timestamps to int64 nanoseconds (fast + compact)
-        times_ns = s.index.view("int64")  # datetime64[ns] representation
+        # 4b) Limit max samples if requested (for faster testing)
+        if cfg.max_samples is not None:
+            s_mains = s_mains.iloc[:cfg.max_samples]
+            s_appliance = s_appliance.iloc[:cfg.max_samples]
 
-        # 5) Normalize (z-score) using global stats
-        values = s.to_numpy(dtype=np.float32)
-        mean = float(np.nanmean(values))
-        std = float(np.nanstd(values) + 1e-8)
+        # 5) Convert timestamps to int64 nanoseconds
+        times_ns = s_mains.index.view("int64")
+
+        # 6) Normalize (z-score) using global stats per signal
+        values_mains = s_mains.to_numpy(dtype=np.float32)
+        values_appliance = s_appliance.to_numpy(dtype=np.float32)
+
+        mean_mains = float(np.nanmean(values_mains))
+        std_mains = float(np.nanstd(values_mains) + 1e-8)
+        mean_appliance = float(np.nanmean(values_appliance))
+        std_appliance = float(np.nanstd(values_appliance) + 1e-8)
 
         if cfg.normalize:
-            values = (values - mean) / std
+            values_mains = (values_mains - mean_mains) / std_mains
+            values_appliance = (values_appliance - mean_appliance) / std_appliance
 
-        # 6) Build windows
-        X = self._make_windows(values, cfg.window_size, cfg.stride)
+        # 7) Build windows
+        X = self._make_windows(values_mains, cfg.window_size, cfg.stride)
+        Y = self._make_windows(values_appliance, cfg.window_size, cfg.stride)
         T = self._make_time_windows(times_ns, cfg.window_size, cfg.stride)
 
         if X.shape[0] == 0:
             raise RuntimeError(
-                f"Not enough data ({len(values)} samples) for window_size={cfg.window_size}"
+                f"Not enough data ({len(values_mains)} samples) for window_size={cfg.window_size}"
             )
 
-        # 7) Save in chunks for fast random access
+        # 8) Save in chunks for fast random access
         n_windows = X.shape[0]
         chunk_windows = int(cfg.chunk_windows)
 
@@ -241,19 +268,22 @@ class MyDataset(Dataset):
         for start in range(0, n_windows, chunk_windows):
             end = min(start + chunk_windows, n_windows)
             x_chunk = X[start:end]
+            y_chunk = Y[start:end]
             t_chunk = T[start:end]
 
             np.savez_compressed(
                 output_folder / f"chunk_{chunk_id:04d}.npz",
                 x=x_chunk.astype(np.float32),
+                y=y_chunk.astype(np.float32),
                 t=t_chunk.astype(np.int64),
             )
             chunk_id += 1
 
-        # 8) Save metadata (stats + config)
+        # 9) Save metadata (stats + config)
         meta = dict(
             building=cfg.building,
-            meter=cfg.meter,
+            meter_mains=cfg.meter_mains,
+            meter_appliance=cfg.meter_appliance,
             physical_quantity=cfg.physical_quantity,
             power_type=cfg.power_type,
             resample_rule=cfg.resample_rule,
@@ -261,13 +291,15 @@ class MyDataset(Dataset):
             clip_min=cfg.clip_min,
             clip_max=cfg.clip_max,
             normalize=cfg.normalize,
-            mean=mean,
-            std=std,
+            mean_mains=mean_mains,
+            std_mains=std_mains,
+            mean_appliance=mean_appliance,
+            std_appliance=std_appliance,
             window_size=cfg.window_size,
             stride=cfg.stride,
-            n_samples=len(values),
+            n_samples=len(values_mains),
             n_windows=n_windows,
-            timezone=str(getattr(s.index, "tz", None)),
+            timezone=str(getattr(s_mains.index, "tz", None)),
         )
         np.savez_compressed(output_folder / "meta.npz", **meta)
 
@@ -280,9 +312,10 @@ def preprocess(data_path: Path, output_folder: Path) -> None:
     dataset = MyDataset(data_path)
     cfg = PreprocessConfig(
         building=1,
-        meter=1,               # mains
+        meter_mains=1,         # mains
+        meter_appliance=2,     # appliance to predict
         physical_quantity="power",
-        power_type="apparent", # matches what you saw
+        power_type="apparent",
         resample_rule="6S",    # optional; set None to keep original
         window_size=1024,
         stride=256,

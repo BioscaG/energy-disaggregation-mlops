@@ -1,0 +1,33 @@
+# Full Training Configuration
+# Purpose: Maximum accuracy with all available data
+# Duration: 2-4 hours (depends on hardware)
+
+preprocess:
+  building: 1
+  meter_mains: 1
+  meter_appliance: 2
+  max_samples: null          # Use ALL data available
+  window_size: 1024
+  stride: 256
+  resample_rule: "6S"
+  normalize: true
+  clip_min: 0.0
+  clip_max: null
+
+train:
+  epochs: 150                # Many epochs for convergence
+  batch_size: 64             # Larger batches for stability
+  lr: 0.00005                # Very low LR for careful learning
+  num_workers: 8             # More workers for faster data loading
+  device: "cuda"             # Requires GPU
+
+evaluate:
+  batch_size: 64
+  device: "cuda"
+  plot_results: true
+
+# Expected results:
+# - Best model performance
+# - val_loss can reach 0.2-0.4 with all data
+# - High prediction accuracy
+# - Good generalization to unseen data

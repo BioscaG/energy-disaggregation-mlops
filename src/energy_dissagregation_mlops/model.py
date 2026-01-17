@@ -4,9 +4,10 @@ import torch
 
 class Model(nn.Module):
     """
-    Simple 1D CNN for time-series regression.
-    Input:  x shape = [B, 1, T]
-    Output: y shape = [B, 1, T]  (e.g. appliance power)
+    1D CNN for energy disaggregation (NILM).
+    Predicts appliance power from mains (total) power.
+    Input:  x shape = [B, 1, T] (mains power)
+    Output: y shape = [B, 1, T] (appliance power)
     """
 
     def __init__(self, window_size: int = 1024):

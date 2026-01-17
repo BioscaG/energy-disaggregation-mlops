@@ -1,0 +1,6 @@
+[core]
+    no_scm = True
+    remote = myremote
+
+['remote "myremote"']
+    url = gs://YOUR_GCP_BUCKET_NAME/dvc-storage

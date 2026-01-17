@@ -1,18 +1,13 @@
-FROM python:3.12-slim
+FROM pytorch/pytorch:2.0-cuda11.8-runtime-ubuntu22.04
 
 WORKDIR /app
-
-RUN apt-get update && \
-    apt-get install --no-install-recommends -y build-essential gcc && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-
-COPY pyproject.toml requirements.txt requirements_dev.txt README.md ./
+RUN apt-get update && apt-get install -y build-essential
+COPY pyproject.toml requirements.txt ./
 COPY src/ ./src/
-COPY configs/ ./configs/
 
-RUN pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir -e .
+RUN pip install -r requirements.txt && pip install -e .
 
 VOLUME ["/app/data", "/app/models"]
 
-ENTRYPOINT ["python", "-u", "-m", "energy_dissagregation_mlops.train"]
+ENV CUDA_VISIBLE_DEVICES=0
+ENTRYPOINT ["python", "-m", "energy_dissagregation_mlops.train"]

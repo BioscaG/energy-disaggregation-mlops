@@ -12,33 +12,40 @@ def preprocess(
     data_path: Path = typer.Option(..., exists=True, help="Path to ukdale.h5"),
     output_folder: Path = typer.Option(..., help="Folder to write processed chunks"),
     building: int = typer.Option(1, help="UK-DALE building number (house)"),
-    meter: int = typer.Option(1, help="Meter number (meter1 is mains)"),
+    meter_mains: int = typer.Option(1, help="Meter number for mains/total power (usually 1)"),
+    meter_appliance: int = typer.Option(2, help="Meter number for appliance to predict (2+)"),
     window_size: int = typer.Option(1024, help="Window length in samples"),
     stride: int = typer.Option(256, help="Stride between windows"),
     resample_rule: str = typer.Option("6S", help="Pandas resample rule (e.g. 6S, 1min)"),
     power_type: str = typer.Option("apparent", help="Power type: apparent/active if available"),
     normalize: bool = typer.Option(True, help="Z-score normalize using global mean/std"),
+    max_samples: int = typer.Option(None, help="Limit to first N samples for faster testing (None=all)"),
 ):
     cfg = PreprocessConfig(
         building=building,
-        meter=meter,
+        meter_mains=meter_mains,
+        meter_appliance=meter_appliance,
         physical_quantity="power",
         power_type=power_type,
         resample_rule=resample_rule if resample_rule.lower() != "none" else None,
         window_size=window_size,
         stride=stride,
         normalize=normalize,
+        max_samples=max_samples,
     )
     ds = MyDataset(data_path=data_path)
     ds.preprocess(output_folder=output_folder, cfg=cfg)
     typer.echo(f"✅ Preprocessed saved to {output_folder}")
+    typer.echo(f"   Mains meter: {meter_mains}, Appliance meter: {meter_appliance}")
+    if max_samples:
+        typer.echo(f"   Limited to {max_samples} samples")
 
 @app.command()
 def train(
     preprocessed_folder: Path = typer.Option("data/processed", exists=True, help="Folder with chunk_*.npz + meta.npz"),
-    epochs: int = typer.Option(5, help="Epochs"),
-    batch_size: int = typer.Option(32, help="Batch size"),
-    lr: float = typer.Option(1e-3, help="Learning rate"),
+    epochs: int = typer.Option(100, help="Epochs"),
+    batch_size: int = typer.Option(16, help="Batch size"),
+    lr: float = typer.Option(1e-4, help="Learning rate"),
     num_workers: int = typer.Option(2, help="DataLoader workers"),
     device: str = typer.Option("auto", help="auto/cpu/cuda"),
 ):
@@ -60,7 +67,7 @@ def evaluate(
     device: str = typer.Option("auto", help="auto/cpu/cuda"),
     plot_results: bool = typer.Option(False, help="Save a reconstruction plot"),
 ):
-    
+
     evaluate_fn(
         preprocessed_folder=str(preprocessed_folder),
         checkpoint_path=str(checkpoint_path),

@@ -1,0 +1,32 @@
+# Normal Training Configuration
+# Purpose: Balanced training with reasonable results
+# Duration: ~30-60 minutes
+
+preprocess:
+  building: 1
+  meter_mains: 1
+  meter_appliance: 2
+  max_samples: 360000         # ~100 hours of data at 1Hz
+  window_size: 1024           # Larger window for better patterns
+  stride: 256                 # 75% overlap
+  resample_rule: "6S"
+  normalize: true
+  clip_min: 0.0
+  clip_max: null
+
+train:
+  epochs: 50                  # Moderate epochs
+  batch_size: 32
+  lr: 0.0001                  # Lower LR for better convergence
+  num_workers: 4
+  device: "auto"
+
+evaluate:
+  batch_size: 32
+  device: "auto"
+  plot_results: true
+
+# Expected results:
+# - Good convergence with val_loss ~0.4-0.6
+# - Model learns appliance patterns
+# - Reasonable prediction accuracy

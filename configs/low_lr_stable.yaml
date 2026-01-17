@@ -1,0 +1,32 @@
+# Low Learning Rate Configuration
+# Purpose: Very stable learning, slow but steady
+# Good for: Large datasets, avoiding oscillations
+
+preprocess:
+  building: 1
+  meter_mains: 1
+  meter_appliance: 2
+  max_samples: 500000
+  window_size: 1024
+  stride: 256
+  resample_rule: "6S"
+  normalize: true
+  clip_min: 0.0
+  clip_max: null
+
+train:
+  epochs: 200                # Need more epochs with low LR
+  batch_size: 64             # Larger batch for stability
+  lr: 0.00001                # 100x lower than default
+  num_workers: 4
+  device: "auto"
+
+evaluate:
+  batch_size: 64
+  device: "auto"
+  plot_results: true
+
+# Expected results:
+# - Slow but stable learning
+# - Unlikely to diverge
+# - Better long-term convergence

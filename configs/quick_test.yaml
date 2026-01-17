@@ -1,0 +1,32 @@
+# Quick Test Configuration
+# Purpose: Fast testing and debugging
+# Duration: ~5-10 minutes total
+
+preprocess:
+  building: 1
+  meter_mains: 1
+  meter_appliance: 2
+  max_samples: 50000          # Only 50k samples (~14 hours of data at 1Hz)
+  window_size: 256
+  stride: 256
+  resample_rule: "6S"         # 6-second intervals
+  normalize: true
+  clip_min: 0.0
+  clip_max: null
+
+train:
+  epochs: 5                   # Just 5 epochs to verify training works
+  batch_size: 32
+  lr: 0.001                   # Standard learning rate
+  num_workers: 2
+  device: "auto"
+
+evaluate:
+  batch_size: 32
+  device: "auto"
+  plot_results: true
+
+# Expected results:
+# - Train/Val loss should decrease
+# - Quick convergence
+# - Useful for debugging pipeline
