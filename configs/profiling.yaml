@@ -1,0 +1,41 @@
+# Profiling Configuration
+# Purpose: Profile training performance to identify bottlenecks
+# Duration: ~5-10 minutes (limited epochs for profiling)
+
+data_path: "data/raw/ukdale.h5"
+
+preprocess:
+  building: 1
+  meter_mains: 1
+  meter_appliance: 2
+  max_samples: 50000          # Small dataset for quick profiling
+  window_size: 256
+  stride: 256
+  resample_rule: "6S"
+  normalize: true
+  clip_min: 0.0
+  clip_max: null
+
+train:
+  epochs: 3                   # Few epochs - just for profiling
+  batch_size: 32
+  lr: 0.001
+  num_workers: 4              # Test different worker counts
+  device: "auto"
+
+evaluate:
+  batch_size: 32
+  device: "auto"
+  plot_results: false         # Skip plotting during profiling
+
+profiling:
+  enabled: true
+  use_pytorch_profiler: false  # Set to true for GPU profiling
+  use_python_profiler: false   # Set to true for Python profiling
+  profile_dataloader: true     # Profile DataLoader performance
+  output_dir: "profiling_results"
+
+# Usage:
+# python scripts/profile_training.py --preprocessed-folder data/processed_fast
+# python scripts/profile_training.py --use-pytorch-profiler
+# python scripts/profile_training.py --profile-dataloader-only

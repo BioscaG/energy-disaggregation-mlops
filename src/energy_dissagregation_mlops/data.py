@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
+from loguru import logger
 
 import shutil
 import kagglehub
@@ -16,10 +17,11 @@ def download_ukdale(target_dir: str | Path = "data/raw") -> Path:
     target_dir = Path(target_dir)
     target_dir.mkdir(parents=True, exist_ok=True)
 
-    print("Downloading UK-DALE dataset...")
+    logger.info("Downloading UK-DALE dataset from Kaggle...")
     path = Path(kagglehub.dataset_download("abdelmdz/uk-dale"))
-    print(f"Dataset downloaded to: {path}")
+    logger.success(f"Dataset downloaded to: {path}")
 
+    logger.info(f"Copying dataset to {target_dir}...")
     for item in path.iterdir():
         dest = target_dir / item.name
         if item.is_dir():
@@ -27,6 +29,7 @@ def download_ukdale(target_dir: str | Path = "data/raw") -> Path:
         else:
             shutil.copy2(item, dest)
 
+    logger.success(f"Dataset ready at: {target_dir}")
     return target_dir
 
 
@@ -87,12 +90,15 @@ class MyDataset(Dataset):
         if not meta_path.exists():
             raise FileNotFoundError(f"Missing meta.npz in {self.preprocessed_folder}")
 
+        logger.debug(f"Loading preprocessed data from: {self.preprocessed_folder}")
         meta = np.load(meta_path, allow_pickle=True)
         self._meta = {k: meta[k].item() if meta[k].dtype == object else meta[k] for k in meta.files}
 
         self._chunks = sorted(self.preprocessed_folder.glob("chunk_*.npz"))
         if not self._chunks:
             raise FileNotFoundError(f"No chunk_*.npz found in {self.preprocessed_folder}")
+
+        logger.debug(f"Found {len(self._chunks)} chunks")
 
         # Build a flat window index
         self._index.clear()
@@ -198,7 +204,12 @@ class MyDataset(Dataset):
         output_folder = Path(output_folder)
         output_folder.mkdir(parents=True, exist_ok=True)
 
+        logger.info("Starting data preprocessing...")
+        logger.info(f"Config: building={cfg.building}, meter_mains={cfg.meter_mains}, meter_appliance={cfg.meter_appliance}")
+        logger.info(f"Window: size={cfg.window_size}, stride={cfg.stride}, normalize={cfg.normalize}")
+
         # 1) Load mains (input) and appliance (target)
+        logger.info(f"Loading meter {cfg.meter_mains} (mains) from building {cfg.building}...")
         s_mains = self._read_meter_series(
             self.data_path,
             building=cfg.building,
@@ -207,6 +218,7 @@ class MyDataset(Dataset):
             power_type=cfg.power_type,
         )
 
+        logger.info(f"Loading meter {cfg.meter_appliance} (appliance) from building {cfg.building}...")
         s_appliance = self._read_meter_series(
             self.data_path,
             building=cfg.building,
@@ -216,21 +228,27 @@ class MyDataset(Dataset):
         )
 
         # 2) Align indices (find common timestamps)
+        logger.debug("Aligning timestamps...")
         common_idx = s_mains.index.intersection(s_appliance.index)
         s_mains = s_mains.loc[common_idx]
         s_appliance = s_appliance.loc[common_idx]
+        logger.info(f"Common timestamps: {len(common_idx)}")
 
         # 3) Resample/fill if requested
+        if cfg.resample_rule:
+            logger.info(f"Resampling to {cfg.resample_rule} with {cfg.fill_method}...")
         s_mains = self._resample_and_fill(s_mains, cfg.resample_rule, cfg.fill_method)
         s_appliance = self._resample_and_fill(s_appliance, cfg.resample_rule, cfg.fill_method)
 
         # 4) Clip if requested
         if cfg.clip_min is not None or cfg.clip_max is not None:
+            logger.debug(f"Clipping values to [{cfg.clip_min}, {cfg.clip_max}]")
             s_mains = s_mains.clip(lower=cfg.clip_min, upper=cfg.clip_max)
             s_appliance = s_appliance.clip(lower=cfg.clip_min, upper=cfg.clip_max)
 
         # 4b) Limit max samples if requested (for faster testing)
         if cfg.max_samples is not None:
+            logger.info(f"Limiting to {cfg.max_samples} samples (max_samples setting)")
             s_mains = s_mains.iloc[:cfg.max_samples]
             s_appliance = s_appliance.iloc[:cfg.max_samples]
 
@@ -238,6 +256,7 @@ class MyDataset(Dataset):
         times_ns = s_mains.index.view("int64")
 
         # 6) Normalize (z-score) using global stats per signal
+        logger.info("Computing normalization statistics...")
         values_mains = s_mains.to_numpy(dtype=np.float32)
         values_appliance = s_appliance.to_numpy(dtype=np.float32)
 
@@ -246,11 +265,16 @@ class MyDataset(Dataset):
         mean_appliance = float(np.nanmean(values_appliance))
         std_appliance = float(np.nanstd(values_appliance) + 1e-8)
 
+        logger.debug(f"Mains: mean={mean_mains:.2f}, std={std_mains:.2f}")
+        logger.debug(f"Appliance: mean={mean_appliance:.2f}, std={std_appliance:.2f}")
+
         if cfg.normalize:
+            logger.info("Applying z-score normalization...")
             values_mains = (values_mains - mean_mains) / std_mains
             values_appliance = (values_appliance - mean_appliance) / std_appliance
 
         # 7) Build windows
+        logger.info(f"Creating windows (window_size={cfg.window_size}, stride={cfg.stride})...")
         X = self._make_windows(values_mains, cfg.window_size, cfg.stride)
         Y = self._make_windows(values_appliance, cfg.window_size, cfg.stride)
         T = self._make_time_windows(times_ns, cfg.window_size, cfg.stride)
@@ -260,10 +284,13 @@ class MyDataset(Dataset):
                 f"Not enough data ({len(values_mains)} samples) for window_size={cfg.window_size}"
             )
 
+        logger.info(f"Created {X.shape[0]} windows from {len(values_mains)} samples")
+
         # 8) Save in chunks for fast random access
         n_windows = X.shape[0]
         chunk_windows = int(cfg.chunk_windows)
 
+        logger.info(f"Saving {n_windows} windows in chunks of {chunk_windows}...")
         chunk_id = 0
         for start in range(0, n_windows, chunk_windows):
             end = min(start + chunk_windows, n_windows)
@@ -277,9 +304,13 @@ class MyDataset(Dataset):
                 y=y_chunk.astype(np.float32),
                 t=t_chunk.astype(np.int64),
             )
+            logger.debug(f"Saved chunk {chunk_id} ({end-start} windows)")
             chunk_id += 1
 
+        logger.info(f"Saved {chunk_id} chunk files")
+
         # 9) Save metadata (stats + config)
+        logger.info("Saving metadata...")
         meta = dict(
             building=cfg.building,
             meter_mains=cfg.meter_mains,
@@ -302,6 +333,9 @@ class MyDataset(Dataset):
             timezone=str(getattr(s_mains.index, "tz", None)),
         )
         np.savez_compressed(output_folder / "meta.npz", **meta)
+
+        logger.success(f"Preprocessing complete! Saved to: {output_folder}")
+        logger.info(f"Total: {n_windows} windows from {len(values_mains)} samples")
 
 
 # --- CLI wrapper (typer) ---

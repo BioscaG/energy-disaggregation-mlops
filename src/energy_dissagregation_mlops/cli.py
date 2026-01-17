@@ -1,5 +1,6 @@
 from pathlib import Path
 import typer
+from loguru import logger
 
 from energy_dissagregation_mlops.data import MyDataset, PreprocessConfig, download_ukdale
 from energy_dissagregation_mlops.train import train as train_fn
@@ -21,6 +22,7 @@ def preprocess(
     normalize: bool = typer.Option(True, help="Z-score normalize using global mean/std"),
     max_samples: int = typer.Option(None, help="Limit to first N samples for faster testing (None=all)"),
 ):
+    logger.info("CLI: Starting preprocessing command")
     cfg = PreprocessConfig(
         building=building,
         meter_mains=meter_mains,
@@ -35,10 +37,10 @@ def preprocess(
     )
     ds = MyDataset(data_path=data_path)
     ds.preprocess(output_folder=output_folder, cfg=cfg)
-    typer.echo(f"✅ Preprocessed saved to {output_folder}")
-    typer.echo(f"   Mains meter: {meter_mains}, Appliance meter: {meter_appliance}")
+    logger.success(f"Preprocessing complete! Saved to {output_folder}")
+    logger.info(f"Configuration: mains={meter_mains}, appliance={meter_appliance}, window={window_size}, stride={stride}")
     if max_samples:
-        typer.echo(f"   Limited to {max_samples} samples")
+        logger.info(f"Limited to {max_samples} samples")
 
 @app.command()
 def train(
@@ -49,6 +51,7 @@ def train(
     num_workers: int = typer.Option(2, help="DataLoader workers"),
     device: str = typer.Option("auto", help="auto/cpu/cuda"),
 ):
+    logger.info("CLI: Starting training command")
     train_fn(
         preprocessed_folder=str(preprocessed_folder),
         epochs=epochs,
@@ -67,7 +70,7 @@ def evaluate(
     device: str = typer.Option("auto", help="auto/cpu/cuda"),
     plot_results: bool = typer.Option(False, help="Save a reconstruction plot"),
 ):
-
+    logger.info("CLI: Starting evaluation command")
     evaluate_fn(
         preprocessed_folder=str(preprocessed_folder),
         checkpoint_path=str(checkpoint_path),
@@ -81,10 +84,12 @@ def evaluate(
 def download(
     target_dir: Path = typer.Option("data/raw", help="Where to store raw dataset"),
 ):
+    logger.info("CLI: Starting download command")
     download_ukdale(target_dir)
-    typer.echo(f"✅ Data downloaded to {target_dir}")
+    logger.success(f"Dataset downloaded to {target_dir}")
 
 def main():
+    logger.info("Starting Energy Disaggregation MLOps CLI")
     app()
 
 if __name__ == "__main__":
