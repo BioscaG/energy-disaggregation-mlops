@@ -1,0 +1,41 @@
+name: Model Registry Change Workflow
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "models/**"
+      - "model_registry/**"
+      - "mlruns/**"
+  push:
+    branches: [main]
+    paths:
+      - "models/**"
+      - "model_registry/**"
+      - "mlruns/**"
+
+jobs:
+  on_model_registry_change:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install deps
+        run: |
+          python -m pip install -U pip
+          python -m pip install -r requirements.txt
+
+      - name: Confirm model-registry change trigger
+        run: |
+          echo "Model registry changed: run promotion/deployment checks here."
+
+      - name: Smoke test model load
+        run: |
+          python -c "import torch; torch.load('models/best.pt', map_location='cpu'); print('Loaded model OK')"
