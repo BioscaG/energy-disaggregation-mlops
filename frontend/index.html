@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Energy Disaggregation Demo</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>Energy Disaggregation API</h1>
+
+  <section>
+    <button onclick="checkHealth()">Check Health</button>
+    <pre id="health"></pre>
+  </section>
+
+  <section>
+    <h2>Predict</h2>
+    <textarea id="input" rows="6">
+[0.1, 0.2, 0.3, 0.4]
+    </textarea>
+
+    <div>
+      <button onclick="predict(false)">Predict (PyTorch)</button>
+      <button onclick="predict(true)">Predict (ONNX)</button>
+    </div>
+
+    <pre id="output"></pre>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>
