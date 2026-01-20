@@ -1,9 +1,8 @@
-from torch.utils.data import Dataset
 import pytest
 import torch
+from torch.utils.data import Dataset
 
 from energy_dissagregation_mlops.data import MyDataset
-
 
 
 @pytest.mark.integration
@@ -13,6 +12,7 @@ def test_my_dataset_constructs_with_real_data():
     except Exception as e:
         pytest.skip(f"Real data not available / dataset init failed: {e}")
     assert isinstance(dataset, Dataset)
+
 
 @pytest.mark.integration
 def test_mydataset_len_and_getitem_real_data():
@@ -31,5 +31,3 @@ def test_mydataset_len_and_getitem_real_data():
     assert y.numel() > 0
     assert torch.isfinite(x).all()
     assert torch.isfinite(y).all()
-
-

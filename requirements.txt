@@ -2,6 +2,7 @@ torch==2.6.0
 typer==0.15.2
 fastapi==0.115.12
 uvicorn==0.34.2
+onnxruntime
 kagglehub
 h5py
 numpy

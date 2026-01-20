@@ -1,7 +1,8 @@
-from locust import HttpUser, task, between
+from locust import HttpUser, between, task
 
-#uses locust to load test
+# uses locust to load test
 PAYLOAD = {"x": [0.1] * 1024}
+
 
 class ApiUser(HttpUser):
     wait_time = between(0.1, 0.5)

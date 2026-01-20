@@ -1,6 +1,6 @@
-from torch import nn
 import torch
 from loguru import logger
+from torch import nn
 
 
 class Model(nn.Module):

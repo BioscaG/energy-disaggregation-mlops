@@ -1,5 +1,6 @@
-import torch
 from pathlib import Path
+
+import torch
 
 from energy_dissagregation_mlops.model import Model
 

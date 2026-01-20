@@ -3,6 +3,7 @@
 Hyperparameter sweep script using Weights & Biases.
 Provides a programmatic way to run sweeps without YAML.
 """
+
 import wandb
 from energy_dissagregation_mlops.train import train
 
@@ -52,10 +53,7 @@ def create_sweep():
         },
     }
 
-    sweep_id = wandb.sweep(
-        sweep_config,
-        project="energy-disaggregation-sweep"
-    )
+    sweep_id = wandb.sweep(sweep_config, project="energy-disaggregation-sweep")
 
     print(f"Created sweep with ID: {sweep_id}")
     print(f"Run sweep with: wandb agent {sweep_id}")
