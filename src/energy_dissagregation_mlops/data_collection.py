@@ -289,7 +289,24 @@ class DriftMonitor:
             from energy_dissagregation_mlops.drift_detection import DataDriftDetector
 
             current_inputs = np.array(self.collector.inputs).flatten()
-            result = DataDriftDetector.compare_distributions(reference_dist, current_inputs)
+
+            # Sample down large distributions to avoid memory issues
+            # MMD requires O(n^2) memory, so we limit to 10k samples max
+            max_samples = 10000
+
+            if len(reference_dist) > max_samples:
+                ref_sample_idx = np.random.choice(len(reference_dist), max_samples, replace=False)
+                reference_sample = reference_dist[ref_sample_idx]
+            else:
+                reference_sample = reference_dist
+
+            if len(current_inputs) > max_samples:
+                curr_sample_idx = np.random.choice(len(current_inputs), max_samples, replace=False)
+                current_sample = current_inputs[curr_sample_idx]
+            else:
+                current_sample = current_inputs
+
+            result = DataDriftDetector.compare_distributions(reference_sample, current_sample)
         except Exception as e:
             logger.error(f"Error analyzing drift: {e}")
             return {
