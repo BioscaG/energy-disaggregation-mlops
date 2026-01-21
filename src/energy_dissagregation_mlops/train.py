@@ -1,13 +1,13 @@
 from pathlib import Path
 
 import torch
+from loguru import logger
 from torch import nn
 from torch.utils.data import DataLoader
-from loguru import logger
-import wandb
 
-from energy_dissagregation_mlops.model import Model
+import wandb
 from energy_dissagregation_mlops.data import MyDataset
+from energy_dissagregation_mlops.model import Model
 
 
 def train(
@@ -60,12 +60,8 @@ def train(
 
     logger.info(f"Dataset loaded: {n} total samples ({n_train} train, {n_val} val)")
 
-    train_loader = DataLoader(
-        train_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True
-    )
-    val_loader = DataLoader(
-        val_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True
-    )
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
+    val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
 
     logger.info("Initializing model...")
     model = Model(window_size=1024).to(device)

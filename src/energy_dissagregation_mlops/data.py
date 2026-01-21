@@ -1,17 +1,17 @@
 from __future__ import annotations
 
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Tuple, List
+from typing import List, Optional, Tuple
 
+import kagglehub
 import numpy as np
 import pandas as pd
 import torch
-from torch.utils.data import Dataset
 from loguru import logger
+from torch.utils.data import Dataset
 
-import shutil
-import kagglehub
 
 def download_ukdale(target_dir: str | Path = "data/raw") -> Path:
     target_dir = Path(target_dir)
@@ -46,7 +46,7 @@ class PreprocessConfig:
     clip_max: Optional[float] = None
     normalize: bool = True  # z-score using global mean/std computed in preprocess
     window_size: int = 1024  # number of samples per training window
-    stride: int = 256        # step between windows
+    stride: int = 256  # step between windows
     chunk_windows: int = 2000  # how many windows to store per .npz chunk
     max_samples: Optional[int] = None  # limit total samples for faster preprocessing (None=all)
 
@@ -82,8 +82,7 @@ class MyDataset(Dataset):
     def _load_index(self) -> None:
         if not self.preprocessed_folder.exists():
             raise FileNotFoundError(
-                f"Preprocessed folder not found: {self.preprocessed_folder}. "
-                f"Run preprocess() first."
+                f"Preprocessed folder not found: {self.preprocessed_folder}. Run preprocess() first."
             )
 
         meta_path = self.preprocessed_folder / "meta.npz"
@@ -113,8 +112,9 @@ class MyDataset(Dataset):
 
     def __getitem__(self, index: int):
         if self.preprocessed_folder is None:
-            raise RuntimeError("This Dataset is not pointing to preprocessed data. "
-                               "Pass preprocessed_folder or run preprocess().")
+            raise RuntimeError(
+                "This Dataset is not pointing to preprocessed data. Pass preprocessed_folder or run preprocess()."
+            )
 
         ci, wi = self._index[index]
         chunk_path = self._chunks[ci]
@@ -186,7 +186,7 @@ class MyDataset(Dataset):
             return np.empty((0, window_size), dtype=values.dtype)
 
         starts = np.arange(0, len(values) - window_size + 1, stride, dtype=np.int64)
-        windows = np.stack([values[i:i + window_size] for i in starts], axis=0)
+        windows = np.stack([values[i : i + window_size] for i in starts], axis=0)
         return windows
 
     @staticmethod
@@ -195,7 +195,7 @@ class MyDataset(Dataset):
             return np.empty((0, window_size), dtype=times_ns.dtype)
 
         starts = np.arange(0, len(times_ns) - window_size + 1, stride, dtype=np.int64)
-        windows = np.stack([times_ns[i:i + window_size] for i in starts], axis=0)
+        windows = np.stack([times_ns[i : i + window_size] for i in starts], axis=0)
         return windows
 
     def preprocess(self, output_folder: Path, cfg: Optional[PreprocessConfig] = None) -> None:
@@ -205,7 +205,9 @@ class MyDataset(Dataset):
         output_folder.mkdir(parents=True, exist_ok=True)
 
         logger.info("Starting data preprocessing...")
-        logger.info(f"Config: building={cfg.building}, meter_mains={cfg.meter_mains}, meter_appliance={cfg.meter_appliance}")
+        logger.info(
+            f"Config: building={cfg.building}, meter_mains={cfg.meter_mains}, meter_appliance={cfg.meter_appliance}"
+        )
         logger.info(f"Window: size={cfg.window_size}, stride={cfg.stride}, normalize={cfg.normalize}")
 
         # 1) Load mains (input) and appliance (target)
@@ -249,8 +251,8 @@ class MyDataset(Dataset):
         # 4b) Limit max samples if requested (for faster testing)
         if cfg.max_samples is not None:
             logger.info(f"Limiting to {cfg.max_samples} samples (max_samples setting)")
-            s_mains = s_mains.iloc[:cfg.max_samples]
-            s_appliance = s_appliance.iloc[:cfg.max_samples]
+            s_mains = s_mains.iloc[: cfg.max_samples]
+            s_appliance = s_appliance.iloc[: cfg.max_samples]
 
         # 5) Convert timestamps to int64 nanoseconds
         times_ns = s_mains.index.view("int64")
@@ -280,9 +282,7 @@ class MyDataset(Dataset):
         T = self._make_time_windows(times_ns, cfg.window_size, cfg.stride)
 
         if X.shape[0] == 0:
-            raise RuntimeError(
-                f"Not enough data ({len(values_mains)} samples) for window_size={cfg.window_size}"
-            )
+            raise RuntimeError(f"Not enough data ({len(values_mains)} samples) for window_size={cfg.window_size}")
 
         logger.info(f"Created {X.shape[0]} windows from {len(values_mains)} samples")
 
@@ -304,7 +304,7 @@ class MyDataset(Dataset):
                 y=y_chunk.astype(np.float32),
                 t=t_chunk.astype(np.int64),
             )
-            logger.debug(f"Saved chunk {chunk_id} ({end-start} windows)")
+            logger.debug(f"Saved chunk {chunk_id} ({end - start} windows)")
             chunk_id += 1
 
         logger.info(f"Saved {chunk_id} chunk files")
@@ -341,16 +341,17 @@ class MyDataset(Dataset):
 # --- CLI wrapper (typer) ---
 import typer
 
+
 def preprocess(data_path: Path, output_folder: Path) -> None:
     print("Preprocessing data...")
     dataset = MyDataset(data_path)
     cfg = PreprocessConfig(
         building=1,
-        meter_mains=1,         # mains
-        meter_appliance=2,     # appliance to predict
+        meter_mains=1,  # mains
+        meter_appliance=2,  # appliance to predict
         physical_quantity="power",
         power_type="apparent",
-        resample_rule="6S",    # optional; set None to keep original
+        resample_rule="6S",  # optional; set None to keep original
         window_size=1024,
         stride=256,
         normalize=True,

@@ -1,21 +1,22 @@
-
 from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
+from loguru import logger
 from torch import nn
 from torch.utils.data import DataLoader
-import numpy as np
-import matplotlib.pyplot as plt
-from loguru import logger
 
-from energy_dissagregation_mlops.model import Model
 from energy_dissagregation_mlops.data import MyDataset
+from energy_dissagregation_mlops.model import Model
+
 
 def evaluate(
     preprocessed_folder: str = "data/processed",
     checkpoint_path: str = "models/best.pt",
     batch_size: int = 32,
     device: str | None = None,
-    plot_results: bool = True
+    plot_results: bool = True,
 ) -> dict:
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
     logger.info(f"Starting evaluation on {device}...")
@@ -29,8 +30,7 @@ def evaluate(
     n = len(dataset)
     n_train = int(0.9 * n)
     _, test_ds = torch.utils.data.random_split(
-        dataset, [n_train, n - n_train],
-        generator=torch.Generator().manual_seed(42)
+        dataset, [n_train, n - n_train], generator=torch.Generator().manual_seed(42)
     )
 
     logger.info(f"Test set size: {len(test_ds)} samples")
@@ -43,7 +43,9 @@ def evaluate(
     model.load_state_dict(checkpoint["model_state"])
     model.eval()
 
-    logger.debug(f"Checkpoint info: epoch={checkpoint.get('epoch', 'N/A')}, val_loss={checkpoint.get('val_loss', 'N/A'):.6f}")
+    logger.debug(
+        f"Checkpoint info: epoch={checkpoint.get('epoch', 'N/A')}, val_loss={checkpoint.get('val_loss', 'N/A'):.6f}"
+    )
 
     criterion_mse = nn.MSELoss()
     criterion_mae = nn.L1Loss()
@@ -74,11 +76,7 @@ def evaluate(
     avg_mse = total_mse / len(test_ds)
     avg_mae = total_mae / len(test_ds)
 
-    metrics = {
-        "mse": avg_mse,
-        "rmse": np.sqrt(avg_mse),
-        "mae": avg_mae
-    }
+    metrics = {"mse": avg_mse, "rmse": np.sqrt(avg_mse), "mae": avg_mae}
 
     logger.info("=" * 50)
     logger.info(f"Evaluation Results for {checkpoint_path}:")
@@ -101,6 +99,7 @@ def evaluate(
         logger.success("Plot saved to evaluation_plot.png")
 
     return metrics
+
 
 if __name__ == "__main__":
     evaluate()

@@ -9,13 +9,13 @@ Includes:
 """
 
 import cProfile
-import pstats
 import io
+import json
+import pstats
 import time
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Optional, Dict, Any
-import json
+from typing import Any, Dict, Optional
 
 import torch
 import torch.profiler
@@ -88,10 +88,10 @@ class TrainingProfiler:
 
         for name, stats in sorted(summary.items()):
             print(f"\n📊 {name}:")
-            print(f"   Mean:  {stats['mean']*1000:.2f} ms")
-            print(f"   Std:   {stats['std']*1000:.2f} ms")
-            print(f"   Min:   {stats['min']*1000:.2f} ms")
-            print(f"   Max:   {stats['max']*1000:.2f} ms")
+            print(f"   Mean:  {stats['mean'] * 1000:.2f} ms")
+            print(f"   Std:   {stats['std'] * 1000:.2f} ms")
+            print(f"   Min:   {stats['min'] * 1000:.2f} ms")
+            print(f"   Max:   {stats['max'] * 1000:.2f} ms")
             print(f"   Total: {stats['total']:.2f} s")
             print(f"   Count: {stats['count']}")
 
@@ -220,7 +220,7 @@ def profile_dataloader(dataloader, num_batches: int = 100) -> Dict[str, float]:
         "throughput": num_batches / total_time,
     }
 
-    print(f"\n   Mean batch time: {stats['mean_batch_time']*1000:.2f} ms")
+    print(f"\n   Mean batch time: {stats['mean_batch_time'] * 1000:.2f} ms")
     print(f"   Throughput: {stats['throughput']:.2f} batches/sec")
     print(f"   Total time: {stats['total_time']:.2f} s")
 
@@ -253,7 +253,9 @@ class GPUMemoryProfiler:
         print("=" * 80)
 
         for snap in self.snapshots:
-            print(f"{snap['label']:30s} | Allocated: {snap['allocated_gb']:.2f} GB | Reserved: {snap['reserved_gb']:.2f} GB")
+            print(
+                f"{snap['label']:30s} | Allocated: {snap['allocated_gb']:.2f} GB | Reserved: {snap['reserved_gb']:.2f} GB"
+            )
 
         print("=" * 80)
 

@@ -29,15 +29,15 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 
-from energy_dissagregation_mlops.model import Model
 from energy_dissagregation_mlops.data import MyDataset
+from energy_dissagregation_mlops.model import Model
 from energy_dissagregation_mlops.profiling import (
-    TrainingProfiler,
-    profile_pytorch,
-    profile_python,
-    profile_dataloader,
     GPUMemoryProfiler,
+    TrainingProfiler,
     analyze_bottlenecks,
+    profile_dataloader,
+    profile_python,
+    profile_pytorch,
 )
 
 
@@ -89,9 +89,7 @@ def train_with_profiling(
         train_loader = DataLoader(
             train_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True
         )
-        val_loader = DataLoader(
-            val_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True
-        )
+        val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
 
     print(f"Dataset loaded: {len(train_ds)} train, {len(val_ds)} val")
 
@@ -125,9 +123,9 @@ def train_with_profiling(
 
     try:
         for epoch in range(1, epochs + 1):
-            print(f"\n{'='*60}")
+            print(f"\n{'=' * 60}")
             print(f"Epoch {epoch}/{epochs}")
-            print(f"{'='*60}")
+            print(f"{'=' * 60}")
 
             # ---- TRAIN ----
             model.train()
@@ -195,9 +193,9 @@ def train_with_profiling(
             profiling_context.__exit__(None, None, None)
 
     # Print and save results
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("PROFILING COMPLETE")
-    print("="*80)
+    print("=" * 80)
 
     profiler.print_summary()
     gpu_mem.print_summary()
@@ -219,7 +217,9 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Profile training performance")
-    parser.add_argument("--preprocessed-folder", type=str, default="data/processed_fast", help="Preprocessed data folder")
+    parser.add_argument(
+        "--preprocessed-folder", type=str, default="data/processed_fast", help="Preprocessed data folder"
+    )
     parser.add_argument("--batch-size", type=int, default=32, help="Batch size")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
     parser.add_argument("--epochs", type=int, default=3, help="Number of epochs")

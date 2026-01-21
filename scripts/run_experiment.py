@@ -19,6 +19,7 @@ Usage:
 import subprocess
 import sys
 from pathlib import Path
+
 from hydra import compose, initialize_config_dir
 from hydra.core.global_hydra import GlobalHydra
 from omegaconf import DictConfig, OmegaConf
@@ -26,9 +27,9 @@ from omegaconf import DictConfig, OmegaConf
 
 def run_command(cmd: list, description: str) -> bool:
     """Run a shell command and handle errors."""
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"▶️  {description}")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
     print(f"Command: {' '.join(cmd)}\n")
 
     result = subprocess.run(cmd)
@@ -49,9 +50,9 @@ def run_experiment(cfg: DictConfig, output_folder: Path) -> None:
     # Generate processed data folder
     processed_folder = f"data/processed_{output_folder.name}"
 
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"📊 EXPERIMENT CONFIGURATION")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
     print(OmegaConf.to_yaml(cfg))
     print(f"Output folder: {output_folder}\n")
 
@@ -80,9 +81,7 @@ def run_experiment(cfg: DictConfig, output_folder: Path) -> None:
     ]
 
     if cfg.preprocess.max_samples:
-        preprocess_cmd.extend(
-            ["--max-samples", str(cfg.preprocess.max_samples)]
-        )
+        preprocess_cmd.extend(["--max-samples", str(cfg.preprocess.max_samples)])
 
     if not run_command(preprocess_cmd, "Preprocessing data"):
         return
@@ -131,9 +130,9 @@ def run_experiment(cfg: DictConfig, output_folder: Path) -> None:
         return
 
     # Summary
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"✅ EXPERIMENT COMPLETED: {output_folder.name}")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
     print(f"Results saved to:")
     print(f"  - Preprocessed data: {processed_folder}/")
     print(f"  - Model checkpoint: models/best.pt")
@@ -155,9 +154,7 @@ def main():
 
     # Initialize Hydra with config directory
     GlobalHydra.instance().clear()
-    with initialize_config_dir(
-        version_base=None, config_dir=str(config_dir)
-    ):
+    with initialize_config_dir(version_base=None, config_dir=str(config_dir)):
         # Use compose to load config with CLI overrides
         # Default config name can be overridden via --config-name
         cfg = compose(config_name="normal_training")

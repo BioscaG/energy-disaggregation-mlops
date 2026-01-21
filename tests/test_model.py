@@ -1,6 +1,5 @@
-
-
 import inspect
+
 import pytest
 import torch
 
@@ -20,9 +19,7 @@ def _instantiate_model():
     try:
         return Model()
     except TypeError as e:
-        pytest.fail(
-            f"Model() requires args. Update _instantiate_model() with your Model signature. Error: {e}"
-        )
+        pytest.fail(f"Model() requires args. Update _instantiate_model() with your Model signature. Error: {e}")
 
 
 def test_model_instantiation():
@@ -30,18 +27,10 @@ def test_model_instantiation():
     assert model is not None
 
 
-
-import pytest
-import torch
-from torch.utils.data import DataLoader
-
-from energy_dissagregation_mlops.model import Model
-from energy_dissagregation_mlops.data import MyDataset
-
-
-import pytest
-import torch
 from pathlib import Path
+
+import pytest
+import torch
 from torch.utils.data import DataLoader
 
 from energy_dissagregation_mlops.data import MyDataset
@@ -101,5 +90,3 @@ def test_one_training_step_reduces_loss_processed_data(device):
     # Don't require strict decrease on real data; just ensure it doesn't explode.
 
     assert losses[-1] <= losses[0] * 1.25
-
-
