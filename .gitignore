@@ -178,6 +178,9 @@ cython_debug/
 
 data/
 
+# But keep DVC metafiles
+!data/*.dvc
+
 models/
 
 .dvc/cache/
