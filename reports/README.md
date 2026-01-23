@@ -85,7 +85,7 @@ will check the repositories and the code to verify your answers.
 * [X] Add pre-commit hooks to your version control setup (M18)
 * [X] Add a continues workflow that triggers when data changes (M19)
 * [X] Add a continues workflow that triggers when changes to the model registry is made (M19)
-* [ ] Create a data storage in GCP Bucket for your data and link this with your data version control setup (M21)
+* [X] Create a data storage in GCP Bucket for your data and link this with your data version control setup (M21)
 * [X] Create a trigger workflow for automatically building your docker images (M21)
 * [ ] Get your model training in GCP using either the Engine or Vertex AI (M21)
 * [X] Create a FastAPI application that can do inference using your model (M22)
@@ -130,11 +130,11 @@ will check the repositories and the code to verify your answers.
 >
 > Example:
 >
-> *s224182, s251999*
+> *sXXXXXX, sXXXXXX, sXXXXXX*
 >
 > Answer:
 
---- question 2 fill here ---
+--- s224182, s251999 ---
 
 ### Question 3
 > **Did you end up using any open-source frameworks/packages not covered in the course during your project? If so**
@@ -168,7 +168,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 4 fill here ---
+--- question 4  fill here ---
 
 ### Question 5
 
@@ -199,7 +199,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 6 fill here ---
+--- We needed clear code with documentation such as comments. as working in groups, especially when it is hard to meet up, then readable code is important ---
 
 ## Version control
 
@@ -218,7 +218,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 7 fill here ---
+--- We implementet muultiple test, both pre-commmit test, but also unit test. Here we have 9 unit test, testing data.py, main.py __init__.py and model.py --- expand
 
 ### Question 8
 
