@@ -181,6 +181,10 @@ data/
 # But keep DVC metafiles
 !data/*.dvc
 
+# Allow folder itself (so git can see the .dvc file)
+!data/
+
+
 models/
 
 .dvc/cache/
