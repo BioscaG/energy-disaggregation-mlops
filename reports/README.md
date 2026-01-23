@@ -87,7 +87,7 @@ will check the repositories and the code to verify your answers.
 * [X] Add a continues workflow that triggers when changes to the model registry is made (M19)
 * [X] Create a data storage in GCP Bucket for your data and link this with your data version control setup (M21)
 * [X] Create a trigger workflow for automatically building your docker images (M21)
-* [ ] Get your model training in GCP using either the Engine or Vertex AI (M21)
+* [X] Get your model training in GCP using either the Engine or Vertex AI (M21)
 * [X] Create a FastAPI application that can do inference using your model (M22)
 * [ ] Deploy your model in GCP using either Functions or Run as the backend (M23)
 * [X] Write API tests for your application and setup continues integration for these (M24)
@@ -148,7 +148,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 3 fill here ---
+--- No we used multiple third-party frameworks such as FastAPI and wandb, but both are covered in the course. we did not use any that was not covered in the course. ---
 
 ## Coding environment
 
@@ -168,7 +168,13 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 4  fill here ---
+--- We manage dependencies via pyproject.toml using setuptools dynamic pins that read requirements.txt for runtime and requirements_dev.txt for dev/test/tooling; Python 3.12+ is required.
+
+To clone the environment:
+
+* python3.12 -m venv .venv && source .venv/bin/activate
+* pip install --upgrade pip
+* pip install -r requirements.txt requirements_dev.txt ---
 
 ### Question 5
 
@@ -184,7 +190,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 5 fill here ---
+--- We followed the cookiecutter MLOps layout and filled in domain pieces: package code in energy_dissagregation_mlops (API/CLI, training, data collection, drift detection, evaluation), experiment configs in configs (Hydra YAMLs), runnable scripts in scripts (training, sweep, ONNX export, drift tests), and tests in tests. We added Docker assets—root Dockerfile, Dockerfile.dev, and dockerfiles for API/CLI/train—to keep reproducible images. We also added frontend (simple client), loadtest with Locust, and profiling_results plus reports for profiling/plots. We kept data placeholders under data and tracked model artifacts in models. Deviations from the template are mainly the FastAPI surface, ONNX export, load testing, and the lightweight frontend; we removed nothing structural, just filled in the template with NILM-specific code/configs. ---
 
 ### Question 6
 
@@ -199,7 +205,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- We needed clear code with documentation such as comments. as working in groups, especially when it is hard to meet up, then readable code is important ---
+--- We needed clear code with documentation such as comments. as working in groups, especially when it is hard to meet up, then readable code is important. We also primarily worked in branches designed for each week. then merging them when all to most tasks where done. this was done to not have to many commits in main. we did have use main for our Virtual machine, that happend to throw the styling a little off. ---
 
 ## Version control
 
@@ -218,7 +224,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- We implementet muultiple test, both pre-commmit test, but also unit test. Here we have 9 unit test, testing data.py, main.py __init__.py and model.py --- expand
+--- We implementer multiple test, both pre-commmit test, but also unit test. Here we have 9 unit test, testing data.py, main.py __init__.py and model.py. this was to test the most crucial parts of the code, and making sure we got a good code coverage even though we did not get every feature, the code coverage was enough to satisfy us. ---
 
 ### Question 8
 
@@ -233,7 +239,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 8 fill here ---
+--- Our total code coverage is 70%, which covers all source code in energy_dissagregation_mlops. While this is reasonable, we're far from 100%. Even if we achieved 100% coverage, it wouldn't guarantee error-free code—coverage measures which lines execute during tests, not whether those tests validate correct behavior, edge cases, or integration bugs. A test suite can pass every line without catching logic errors, race conditions, or domain-specific failures (e.g., drift detection memory issues like the one we see in tests). High coverage is a good signal for maintenance and regression prevention, but it's no substitute for thoughtful test design, property testing, and real-world validation. ---
 
 ### Question 9
 
@@ -248,7 +254,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 9 fill here ---
+--- Yes, we used branches and pull requests throughout development. Each major feature or weekly milestone had its own branch (week2, week3, Week_1), which was merged into main via PR after completion—for example, PR #15 merged the week2 branch containing unit tests and reports. ---
 
 ### Question 10
 
@@ -263,7 +269,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 10 fill here ---
+--- We did not integrate DVC into our workflow. The main reason was project scope—for this MLOps course, we prioritized other aspects like CI/CD, containerization, API development, monitoring, and drift detection over data versioning. The UK-DALE dataset is static and small enough to manage manually, and we had limited team members working on the same data pipeline simultaneously. ---
 
 ### Question 11
 
@@ -280,7 +286,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 11 fill here ---
+--- We organized CI into six separate workflows: tests.yaml runs unit tests across multiple OS (Ubuntu, Windows, macOS), Python versions (3.11, 3.12), and PyTorch versions (2.6.0, 2.7.0) using a matrix strategy, with pip caching enabled and coverage reporting. linting.yaml enforces Ruff code formatting and linting checks. docker_build.yaml builds and pushes Docker images to GHCR with BuildKit caching (cache-from: type=gha). cml_model.yaml triggers on model registry changes, running smoke tests to ensure models load correctly. ---
 
 ## Running code and tracking experiments
 
@@ -299,7 +305,20 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 12 fill here ---
+--- We use Hydra config files to manage experiments. Each YAML in configs defines preprocessing, training, and evaluation parameters. For example, quick_test.yaml enables fast debugging with 5 epochs, while normal_training.yaml runs full training with 50 epochs. To run experiments:
+
+python scripts/run_experiment.py --config-name quick_test
+python scripts/run_experiment.py --config-name normal_training
+
+Parameters can be overridden from CLI:
+
+python scripts/run_experiment.py --config-name normal_training train.lr=0.0001 train.epochs=100
+
+Alternatively, use direct CLI commands:
+
+python -m energy_dissagregation_mlops.cli preprocess --data-path data/raw/ukdale.h5 --output-folder data/processed
+python -m energy_dissagregation_mlops.cli train --preprocessed-folder data/processed --epochs 50 --batch-size 32 --lr 0.0001
+python -m energy_dissagregation_mlops.cli evaluate --preprocessed-folder data/processed ---
 
 ### Question 13
 
@@ -314,7 +333,15 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 13 fill here ---
+--- We ensure reproducibility through multiple mechanisms. All experiment parameters are stored in Hydra YAML config files (configs) that capture complete setup. Weights & Biases automatically logs hyperparameters, metrics, and model artifacts for each training run. We use Loguru for comprehensive logging of all steps. Model checkpoints save the full state (weights, optimizer, epoch, validation loss) to best.pt. Git tracks code versions at experiment time. Docker ensures environment consistency with pinned Python and PyTorch versions.
+
+To reproduce an experiment, a team member would:
+
+Checkout the git commit from the W&B run metadata
+Use the saved config from W&B or the local configs/ folder
+Run: python scripts/run_experiment.py --config-name normal_training
+All parameters, metrics, and artifacts are automatically logged to W&B for full traceability
+This combination of versioned configs, comprehensive logging, and centralized artifact storage makes all experiments fully reproducible regardless of time elapsed. ---
 
 ### Question 14
 
@@ -331,7 +358,8 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 14 fill here ---
+--- [Figure of the wandb](figures/wandb.png), from the picture we can see the we track  val_loss and train_loss as the 2 most important 
+features. we could use this for more information. But do to time contrinats we could not run more than 2 epochs. ---
 
 ### Question 15
 
@@ -346,7 +374,17 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 15 fill here ---
+--- We developed multiple Docker images for different purposes. The Dockerfile serves the production API using uvicorn on port 8000 with health checks. Dockerfile.dev provides a development environment with testing/linting tools. train.dockerfile uses PyTorch 2.0 with CUDA support for GPU-accelerated training. api.dockerfile runs the inference API with model artifacts. cli.dockerfile provides CLI access.
+
+To run the API container:
+
+docker build -f dockerfiles/api.dockerfile -t energy-api .
+docker run -p 8000:8000 -v ./models:/app/models energy-api
+
+For training with GPU:
+
+docker build -f dockerfiles/train.dockerfile -t energy-train .
+docker run --gpus all -v ./data:/app/data -v ./models:/app/models energy-train ---
 
 ### Question 16
 
@@ -361,7 +399,9 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 16 fill here ---
+--- For debugging, we use Loguru for logging across the entire codebase (info and debug messages) and Weights & Biases (W&B) to compare experiments. We also use pytest for unit testing.
+
+We performed profiling with profile_training.py using our profiling.py module. The results were saved in training_profile.json. The profiling helped identify bottlenecks in data loading and GPU memory usage. ---
 
 ## Working in the cloud
 
@@ -378,7 +418,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 17 fill here ---
+--- We used the following two services: Engine and Bucket. Engine is used for training our model using cpu and overview of the cpu usage on GPC, it was taking a long time and could be optimized and Bucket is used for the data, specifically the DVC to control the data version and uploaded it. ---
 
 ### Question 18
 
@@ -393,7 +433,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 18 fill here ---
+--- We used Google Cloud Compute Engine to run model training on a remote VM, primarily to avoid local hardware limits and to keep the training environment reproducible. We created and managed a dedicated training instance (e.g., mlops-train-vm) in europe-west1-b, connected via SSH, and ran training inside a Python virtual environment on the VM. The VM type was an 8 vCPU machine, and the CPU model reported by the system was AMD EPYC 7B12 (NUMA node0 CPUs 0–7). This setup allowed us to execute the full training pipeline on GCP, monitor resource usage, and keep the process running independently of our local machine. However, because the training ran on CPU, each epoch took significantly longer than expected. For faster iteration, we therefore found it more practical to run short experiments locally and use Compute Engine mainly for longer or unattended runs. ---
 
 ### Question 19
 
@@ -402,7 +442,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 19 fill here ---
+--- [Figure of the Bucket](figures/bucket.png) ---
 
 ### Question 20
 
@@ -411,7 +451,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 20 fill here ---
+--- [Figure of the artifact](figures/artifact.png) ---
 
 ### Question 21
 
@@ -420,7 +460,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 21 fill here ---
+--- Could not find a build history, I must have made a mistake as seen [here](figures/build.png). ---
 
 ### Question 22
 
@@ -435,7 +475,15 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 22 fill here ---
+--- We managed to train our model in the cloud using the Engine. We did this by starting a virtuel machine then added disk for storage, and upgraded the given hardware, as with standard hardware the training took 1 hour per epoch, but with:
+CPU(s):                                  8
+On-line CPU(s) list:                     0-7
+Model name:                              AMD EPYC 7B13
+NUMA node0 CPU(s):                       0-7
+
+it only took 15 minutes per epoch, drastically cutting training time. due to lack of time we only trained the model on 2 epochs to test it is in working order.
+The reason we choose the Engine
+was because it was simple to set up on google cloud, okay easy to use whilst the overview gives a nice understanding. ---
 
 ## Deployment
 
@@ -452,7 +500,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 23 fill here ---
+--- We did manage to write an API for our model. We used FastAPI to do this. We did this by creating a new folder for the the API called app and in app we have main.py. in there we set up a fastAPI running on CPU. we used a on:event as for when it starts up, we then load our best model, saved in best.pt, And made it possible to check health and predict We also added tests for the API to check it works and a very simple frontend. lastly we tested the model manually and then added the unit test. ---
 
 ### Question 24
 
@@ -468,7 +516,12 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 24 fill here ---
+--- We deployed the model locally and validated the full inference pipeline through an API-based setup. A dedicated app/ folder was created, containing a main.py file that defines the backend service. The API was implemented using FastAPI, exposing two endpoints: a health endpoint for service monitoring and a predict endpoint for model inference. A simple frontend interface was developed and connected to the API for user interaction. To optimize inference performance, the model was exported and integrated using ONNX, allowing both PyTorch and ONNX execution paths to be supported. The service was launched using the command:
+
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+This provided local access to the API, where the health endpoint was verified to ensure correct operation. The frontend was served separately and accessed via
+http://127.0.0.1:5501/frontend/index.html, enabling real-time predictions through the browser using both ONNX and PyTorch backends. ---
 
 ### Question 25
 
@@ -483,7 +536,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 25 fill here ---
+--- We also implemented unit testing for the API to ensure reliability and correct behavior of all endpoints. The tests were defined in test_api.py and cover functionality. Five test cases were implemented. The first test verifies the health endpoint by checking that the API responds with HTTP status code 200, confirming that the service is running correctly. The second test validates the predict endpoint using a single input sample to ensure correct inference behavior. The third test evaluates batch prediction, verifying that multiple inputs are processed correctly in a single request. The fourth test checks system robustness by sending an empty input, ensuring proper error handling and response behavior. The final test verifies that prediction using the ONNX backend functions correctly, confirming successful model export and inference integration. Together, these tests provide coverage for stability. ---
 
 ### Question 26
 
@@ -498,7 +551,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 26 fill here ---
+--- We implemented experiment tracking and basic monitoring using Weights & Biases during model training, but we did not deploy full production monitoring for the live API. W&B was integrated into the training pipeline to log metrics such as training loss, validation loss, hyperparameters, and run metadata. This allows us to track model performance across runs, compare experiments, and ensure reproducibility. However, this monitoring is limited to the training phase and not the deployed inference service. As we did not deploy the model the monitoring is only kept to the training phase helping seeing Val_loss and train_loss this helped us better understand the model. ---
 
 ## Overall discussion of project
 
@@ -517,7 +570,9 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 27 fill here ---
+--- Group member s251999 used and Group member s224182 used used both around the nominated amount of hours, around the 45 hours each week on average, in total 3.5 ETCS credits was spend during development for the code, cloud and testing. and the last 1.5 ETCS during report writing.
+*costing the most was setting everything up on the cloud due to integration hell as loading the data with "dvc pull -v" we need the data in the git structure Working in the cloud was not enjoyable, but we learned a lot from it, and is an important skill from this course. 
+pushing data to the cloud and training the model, took also exceptionally longer than expected. ---
 
 ### Question 28
 
@@ -533,7 +588,7 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 28 fill here ---
+--- We implemented a simple frontend for our API. We did this because we wanted to show the user health, and predict The frontend was made with HTML, CSS and JavaScript, with an interacable text box to input X-Matrix. ---
 
 ### Question 29
 
@@ -564,7 +619,10 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 30 fill here ---
+--- The project had several challenges, both technically and in terms of collaboration. One of the biggest difficulties was communication. Since we were both away from DTU, all coordination happened online through Teams, and our working hours often did not overlap. This made planning, debugging, and decision-making slower, as many issues could not be solved in real time and instead required back-and-forth messages.
+Technically, the biggest challenge was working with GCP and data infrastructure. A lot of time was spent setting up Google Cloud Storage, connecting it with DVC, configuring remotes, and handling authentication and permissions. Uploading the dataset to the GCP bucket alone took around two hours, and spent several more hours debugging issues between local machines, the VM, and the cloud storage. Understanding how Git, DVC, the cache, and the remote storage interact was much more complex than expected.
+Training the model on GCP was another challenge, since the VM was CPU-based, which made training much slower than expected. This required adjustments to batch sizes, epochs, and expectations around performance.
+Overall, although the course was well structured, the amount of material in a short time period was intense. However, working through these problems gave us a much better understanding MLOps systems, where most of the work is not only about modeling, but about infrastructure, tooling, integration, and debugging complex systems. ---
 
 ### Question 31
 
@@ -582,4 +640,5 @@ will check the repositories and the code to verify your answers.
 > *We have used ChatGPT to help debug our code. Additionally, we used GitHub Copilot to help write some of our code.*
 > Answer:
 
---- question 31 fill here ---
+--- We diveded it as student s251999 was in charge of week 1 and s224182 was in charge of week 2 and the report was split equally. All members contributed to the code. 
+ChatGPT was used for initial code generation, for helping understanding topics better and for setting up and changing harware for the GCP, and for suggesting better wording for the report. ---
