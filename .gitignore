@@ -187,5 +187,9 @@ data/
 
 models/
 
+tests/data/**
+!tests/data/*.dvc
+!tests/data/
+
 .dvc/cache/
 .dvc/tmp/
