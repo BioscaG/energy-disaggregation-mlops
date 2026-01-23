@@ -1,13 +1,30 @@
-FROM pytorch/pytorch:2.0-cuda11.8-runtime-ubuntu22.04
+# CPU-friendly base; switch to a CUDA base only if you will request GPU on Vertex AI
+FROM pytorch/pytorch:2.0.1-cpu
 
 WORKDIR /app
-RUN apt-get update && apt-get install -y build-essential
+
+# System deps: git is useful for editable installs; curl for debugging
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git curl build-essential \
+  && rm -rf /var/lib/apt/lists/*
+
+# Copy minimal files first to leverage Docker layer caching
 COPY pyproject.toml requirements.txt ./
+
+# Install python deps + DVC GCS plugin
+RUN pip install --no-cache-dir -U pip setuptools wheel \
+ && pip install --no-cache-dir -r requirements.txt \
+ && pip install --no-cache-dir dvc-gs
+
+# Copy source
 COPY src/ ./src/
 
-RUN pip install -r requirements.txt && pip install -e .
+# Install your package
+RUN pip install --no-cache-dir -e .
 
-VOLUME ["/app/data", "/app/models"]
+# Vertex typically mounts /gcs and /tmp; keep outputs in /app/models unless you change train.py to write to GCS
+ENV PYTHONUNBUFFERED=1
 
-ENV CUDA_VISIBLE_DEVICES=0
-ENTRYPOINT ["python", "-m", "energy_dissagregation_mlops.train"]
+# Pull data via DVC, then run training
+# (Assumes your DVC remote is already set to gcsremote in .dvc/config which is in the repo)
+ENTRYPOINT ["bash", "-lc", "dvc pull -v && python -m energy_dissagregation_mlops.train"]
