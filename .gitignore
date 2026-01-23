@@ -193,3 +193,6 @@ tests/data/**
 
 .dvc/cache/
 .dvc/tmp/
+
+wandb/
+reports/figures/*.png
