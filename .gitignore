@@ -195,4 +195,3 @@ tests/data/**
 .dvc/tmp/
 
 wandb/
-reports/figures/*.png
